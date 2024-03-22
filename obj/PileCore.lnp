@@ -1,0 +1,11 @@
+".\obj\ISR.obj",
+".\obj\main.obj",
+".\obj\EepRom.obj",
+".\obj\uart.obj",
+".\obj\ModBus.obj",
+".\obj\ModBusDev.obj" 
+TO ".\obj\PileCore" 
+PRINT(".\obj\PileCore.map") CASE 
+REMOVEUNUSED 
+CLASSES (EDATA (0x0-0xFFF), 
+HDATA (0x0-0xFFF)) 

@@ -1,0 +1,186 @@
+C251 COMPILER V5.60.0,  ModBusDev                                                          22/03/24  16:37:32  PAGE 1   
+
+
+C251 COMPILER V5.60.0, COMPILATION OF MODULE ModBusDev
+OBJECT MODULE PLACED IN .\obj\ModBusDev.obj
+COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE ModBus\ModBusDev.c XSMALL OPTIMIZE(0,SPEED) BROWSE INCDIR(.\Flash;.\Ua
+                    -rt;.\ModBus;..\FixSamp8_Conbinet) PRINT(.\obj\ModBusDev.lst) OBJECT(.\obj\ModBusDev.obj) 
+
+stmt  level    source
+
+    1          #include <stdio.h>
+    2          #include <stdlib.h>
+    3          #include <string.h>
+    4          
+    5          
+    6          #include "main.h"
+    7          #include "ModBus.h"
+    8          #include "ModBusDev.h"
+    9          #include "uart.h"
+   10          
+   11          
+   12          MODBUS_PARAM xdata ModBusParam;
+   13          MODBUS_STATUS xdata ModBusStatus;
+   14          MODBUS_INFO xdata ModBusInfo;
+   15          
+   16          HOST_SEND_FRAME xdata  HostSendFrame;   // 发送帧
+   17          DEVICE_READ_ACK xdata  ReadAckFrame;    // 读接收帧
+   18          DEVICE_WRITE_ACK xdata WriteAckFrame;  // 写接收帧c
+   19          
+   20          
+   21          
+   22          /*
+   23          ModBus 帧格式
+   24          1. 发送帧
+   25          地址           命令     寄存器    寄存器数量    数据                                             CRC   
+   26          0A(固定值)     Cmd(1)   RX(2)     n(2)          无数据表示读取、有数据表示写对应的寄存器 
+   27          
+   28          数据定义:  长度 + 数据
+   29                     n*2    dat(n*2)
+   30          
+   31          2. 应答帧 -- 返回数据
+   32          地址           命令   数据长度    数据      CRC   
+   33          0A(固定值)     Cmd    n(1)        dat(n)
+   34          
+   35          3. 应答帧 -- 返回状态
+   36          地址           命令   寄存器   寄存器数量     CRC   
+   37          0A(固定值)     Cmd    Rx(2)    n(2)                       
+   38          */
+   39          
+   40          
+   41          DEVICE_READ_ACK xdata  DevReadAck;   
+   42          DEVICE_WRITE_ACK xdata DevWriteAck;
+   43          
+   44          HOST_SEND_FRAME xdata RecvFrame;   
+   45          
+   46          
+   47          // 把浮点数转换为大端打包到发送数据区
+   48          void PackageFloatValue(WORD Offset, float val)
+   49          {
+   50   1          BYTE temp[4] = {0};
+   51   1          FloatToBytes(val,temp);
+   52   1          memcpy(&DevReadAck.Data[Offset], temp, 4);  
+   53   1      }
+   54          
+   55          void PackageDWordValue(WORD Offset, DWORD val)
+   56          {
+   57   1          DWORD temp;
+   58   1          temp = SwEndian(val);
+C251 COMPILER V5.60.0,  ModBusDev                                                          22/03/24  16:37:32  PAGE 2   
+
+   59   1          memcpy(&DevReadAck.Data[Offset], &temp, 4);  
+   60   1      }
+   61          
+   62          
+   63          void PackageWordValue(WORD Offset, WORD val)
+   64          {
+   65   1          BYTE temp[2] = {0};
+   66   1          temp[0] = (BYTE)(val >> 8);
+   67   1          temp[1] = (BYTE)val;
+   68   1          memcpy(&DevReadAck.Data[Offset], temp, 2);  
+   69   1      }
+   70          
+   71          //保存读数据
+   72          void ModBusSave()
+   73          {
+   74   1          BYTE i = 0;     
+   75   1          RunStatus.SlaveRun = ModBusParam.RunStatus; 
+   76   1          for(i = 0;i<8;i++)
+   77   1          {
+   78   2              RunStatus.Alarm[i] = ModBusParam.Alarm[i];
+   79   2          }
+   80   1          
+   81   1          WriteParam();
+   82   1      }
+   83          
+   84          
+   85          
+   86          //从设备读应答处理
+   87          BYTE ReadAck()
+   88          {
+   89   1          WORD i = 0;
+   90   1          WORD reg = 0;   
+   91   1          if(ReadAckFrame.DataLen <= 0)
+   92   1          {
+   93   2              return false;
+   94   2          }
+   95   1          memcpy(&reg, &ReadAckFrame.Data[0], 2);
+   96   1          if(reg == RemRegAddr.SypAddr)
+   97   1          { 
+   98   2              memcpy(&ModBusParam, ReadAckFrame.Data, sizeof(MODBUS_PARAM));
+   99   2          }
+  100   1      
+  101   1          ModBusSave();
+  102   1          return true;
+  103   1      }
+  104          
+  105          
+  106          //写应答处理
+  107          bool WriteAckDev()
+  108          {
+  109   1         //if (WriteAckFrame.Crc == 0)
+  110   1         //{
+  111   1             //return;
+  112   1         //}
+  113   1      
+  114   1         return true;
+  115   1      }
+  116          
+  117          void HndModBusRecv(BYTE *buf, BYTE len)
+  118          {
+  119   1          if (!ValidRtuFrame(buf, len))
+  120   1          {
+  121   2              return;
+  122   2          }
+  123   1          
+  124   1          memset(&ReadAckFrame, 0, sizeof(DEVICE_READ_ACK));
+C251 COMPILER V5.60.0,  ModBusDev                                                          22/03/24  16:37:32  PAGE 3   
+
+  125   1          memset(&WriteAckFrame, 0, sizeof(DEVICE_WRITE_ACK));
+  126   1          if(buf[0]!= 2)//SysParam.Address)
+  127   1          {
+  128   2              return;
+  129   2          }
+  130   1          switch(buf[1])
+  131   1          {
+  132   2              case CMD_READ_REG:
+  133   2              {
+  134   3                  memcpy(&ReadAckFrame, buf, len);
+  135   3                  ReadAck(); 
+  136   3                  break;     
+  137   3              }
+  138   2              case CMD_WRITE_REG:
+  139   2              {
+  140   3                  memcpy(&WriteAckFrame, buf, len);
+  141   3                  WriteAckDev(); 
+  142   3                  break;
+  143   3              }
+  144   2          }
+  145   1      
+  146   1      }
+  147          
+  148          
+
+
+Module Information          Static   Overlayable
+------------------------------------------------
+  code size            =       523     ------
+  ecode size           =    ------     ------
+  data size            =    ------     ------
+  idata size           =    ------     ------
+  pdata size           =    ------     ------
+  xdata size           =      1118     ------
+  xdata-const size     =    ------     ------
+  edata size           =        36     ------
+  bit size             =    ------     ------
+  ebit size            =    ------     ------
+  bitaddressable size  =    ------     ------
+  ebitaddressable size =    ------     ------
+  far data size        =    ------     ------
+  huge data size       =    ------     ------
+  const size           =    ------     ------
+  hconst size          =         6     ------
+End of Module Information.
+
+
+C251 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
