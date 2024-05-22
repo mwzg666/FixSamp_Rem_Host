@@ -1,10 +1,10 @@
-C251 COMPILER V5.60.0,  uart                                                               22/03/24  16:37:31  PAGE 1   
+C251 COMPILER V5.60.0,  uart                                                               11/05/24  16:37:36  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE uart
 OBJECT MODULE PLACED IN .\obj\uart.obj
-COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE Uart\uart.c XSMALL OPTIMIZE(0,SPEED) BROWSE INCDIR(.\Flash;.\Uart;.\Mo
-                    -dBus;..\FixSamp8_Conbinet) PRINT(.\obj\uart.lst) OBJECT(.\obj\uart.obj) 
+COMPILER INVOKED BY: D:\Tool\Keilc251\C251\BIN\C251.EXE Uart\uart.c XSMALL OPTIMIZE(0,SPEED) BROWSE INCDIR(.\Flash;.\Uar
+                    -t;.\ModBus;..\FixSamp8_Conbinet) PRINT(.\obj\uart.lst) OBJECT(.\obj\uart.obj) 
 
 stmt  level    source
 
@@ -66,7 +66,7 @@ stmt  level    source
    56          void UART1_int (void) interrupt 4
    57          {
    58   1          if(RI)
-C251 COMPILER V5.60.0,  uart                                                               22/03/24  16:37:31  PAGE 2   
+C251 COMPILER V5.60.0,  uart                                                               11/05/24  16:37:36  PAGE 2   
 
    59   1          {
    60   2              RI = 0;
@@ -134,7 +134,7 @@ stmt  level    source
   122          
   123          void ClearUart1Buf()
   124          {
-C251 COMPILER V5.60.0,  uart                                                               22/03/24  16:37:31  PAGE 3   
+C251 COMPILER V5.60.0,  uart                                                               11/05/24  16:37:36  PAGE 3   
 
   125   1          memset(RX1_Buffer,0,MAX_LENGTH);
   126   1          RX1_Cnt = 0;

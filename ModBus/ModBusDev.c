@@ -73,6 +73,7 @@ void ModBusSave()
 {
     BYTE i = 0;     
     RunStatus.SlaveRun = ModBusParam.RunStatus; 
+    SysParam.ChModeCtl = ModBusParam.ChModeCtl; 
     for(i = 0;i<8;i++)
     {
         RunStatus.Alarm[i] = ModBusParam.Alarm[i];

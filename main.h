@@ -54,6 +54,7 @@ typedef struct
     WORD  res2;
       
     BYTE  Enable;                               // 通道使能：1位指示一个通道
+    BYTE  ChModeCtl;                            // 在各模式下通道单独控制状态
     //BYTE  LightEnable;
     //BYTE  Valve[KEY_NUM];                   // 电磁阀
     bool  RemCtlFlag;                           //远程控制标志

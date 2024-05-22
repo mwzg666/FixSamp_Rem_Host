@@ -1,10 +1,10 @@
-C251 COMPILER V5.60.0,  ModBusDev                                                          22/03/24  16:37:32  PAGE 1   
+C251 COMPILER V5.60.0,  ModBusDev                                                          11/05/24  16:37:36  PAGE 1   
 
 
 C251 COMPILER V5.60.0, COMPILATION OF MODULE ModBusDev
 OBJECT MODULE PLACED IN .\obj\ModBusDev.obj
-COMPILER INVOKED BY: D:\KeilMDK\C251\BIN\C251.EXE ModBus\ModBusDev.c XSMALL OPTIMIZE(0,SPEED) BROWSE INCDIR(.\Flash;.\Ua
-                    -rt;.\ModBus;..\FixSamp8_Conbinet) PRINT(.\obj\ModBusDev.lst) OBJECT(.\obj\ModBusDev.obj) 
+COMPILER INVOKED BY: D:\Tool\Keilc251\C251\BIN\C251.EXE ModBus\ModBusDev.c XSMALL OPTIMIZE(0,SPEED) BROWSE INCDIR(.\Flas
+                    -h;.\Uart;.\ModBus;..\FixSamp8_Conbinet) PRINT(.\obj\ModBusDev.lst) OBJECT(.\obj\ModBusDev.obj) 
 
 stmt  level    source
 
@@ -66,7 +66,7 @@ stmt  level    source
    56          {
    57   1          DWORD temp;
    58   1          temp = SwEndian(val);
-C251 COMPILER V5.60.0,  ModBusDev                                                          22/03/24  16:37:32  PAGE 2   
+C251 COMPILER V5.60.0,  ModBusDev                                                          11/05/24  16:37:36  PAGE 2   
 
    59   1          memcpy(&DevReadAck.Data[Offset], &temp, 4);  
    60   1      }
@@ -85,91 +85,92 @@ stmt  level    source
    73          {
    74   1          BYTE i = 0;     
    75   1          RunStatus.SlaveRun = ModBusParam.RunStatus; 
-   76   1          for(i = 0;i<8;i++)
-   77   1          {
-   78   2              RunStatus.Alarm[i] = ModBusParam.Alarm[i];
-   79   2          }
-   80   1          
-   81   1          WriteParam();
-   82   1      }
-   83          
+   76   1          SysParam.ChModeCtl = ModBusParam.ChModeCtl; 
+   77   1          for(i = 0;i<8;i++)
+   78   1          {
+   79   2              RunStatus.Alarm[i] = ModBusParam.Alarm[i];
+   80   2          }
+   81   1          
+   82   1          WriteParam();
+   83   1      }
    84          
    85          
-   86          //从设备读应答处理
-   87          BYTE ReadAck()
-   88          {
-   89   1          WORD i = 0;
-   90   1          WORD reg = 0;   
-   91   1          if(ReadAckFrame.DataLen <= 0)
-   92   1          {
-   93   2              return false;
-   94   2          }
-   95   1          memcpy(&reg, &ReadAckFrame.Data[0], 2);
-   96   1          if(reg == RemRegAddr.SypAddr)
-   97   1          { 
-   98   2              memcpy(&ModBusParam, ReadAckFrame.Data, sizeof(MODBUS_PARAM));
-   99   2          }
-  100   1      
-  101   1          ModBusSave();
-  102   1          return true;
-  103   1      }
-  104          
+   86          
+   87          //从设备读应答处理
+   88          BYTE ReadAck()
+   89          {
+   90   1          WORD i = 0;
+   91   1          WORD reg = 0;   
+   92   1          if(ReadAckFrame.DataLen <= 0)
+   93   1          {
+   94   2              return false;
+   95   2          }
+   96   1          memcpy(&reg, &ReadAckFrame.Data[0], 2);
+   97   1          if(reg == RemRegAddr.SypAddr)
+   98   1          { 
+   99   2              memcpy(&ModBusParam, ReadAckFrame.Data, sizeof(MODBUS_PARAM));
+  100   2          }
+  101   1      
+  102   1          ModBusSave();
+  103   1          return true;
+  104   1      }
   105          
-  106          //写应答处理
-  107          bool WriteAckDev()
-  108          {
-  109   1         //if (WriteAckFrame.Crc == 0)
-  110   1         //{
-  111   1             //return;
-  112   1         //}
-  113   1      
-  114   1         return true;
-  115   1      }
-  116          
-  117          void HndModBusRecv(BYTE *buf, BYTE len)
-  118          {
-  119   1          if (!ValidRtuFrame(buf, len))
-  120   1          {
-  121   2              return;
-  122   2          }
-  123   1          
-  124   1          memset(&ReadAckFrame, 0, sizeof(DEVICE_READ_ACK));
-C251 COMPILER V5.60.0,  ModBusDev                                                          22/03/24  16:37:32  PAGE 3   
+  106          
+  107          //写应答处理
+  108          bool WriteAckDev()
+  109          {
+  110   1         //if (WriteAckFrame.Crc == 0)
+  111   1         //{
+  112   1             //return;
+  113   1         //}
+  114   1      
+  115   1         return true;
+  116   1      }
+  117          
+  118          void HndModBusRecv(BYTE *buf, BYTE len)
+  119          {
+  120   1          if (!ValidRtuFrame(buf, len))
+  121   1          {
+  122   2              return;
+  123   2          }
+  124   1          
+C251 COMPILER V5.60.0,  ModBusDev                                                          11/05/24  16:37:36  PAGE 3   
 
-  125   1          memset(&WriteAckFrame, 0, sizeof(DEVICE_WRITE_ACK));
-  126   1          if(buf[0]!= 2)//SysParam.Address)
-  127   1          {
-  128   2              return;
-  129   2          }
-  130   1          switch(buf[1])
-  131   1          {
-  132   2              case CMD_READ_REG:
-  133   2              {
-  134   3                  memcpy(&ReadAckFrame, buf, len);
-  135   3                  ReadAck(); 
-  136   3                  break;     
-  137   3              }
-  138   2              case CMD_WRITE_REG:
-  139   2              {
-  140   3                  memcpy(&WriteAckFrame, buf, len);
-  141   3                  WriteAckDev(); 
-  142   3                  break;
-  143   3              }
-  144   2          }
-  145   1      
-  146   1      }
-  147          
+  125   1          memset(&ReadAckFrame, 0, sizeof(DEVICE_READ_ACK));
+  126   1          memset(&WriteAckFrame, 0, sizeof(DEVICE_WRITE_ACK));
+  127   1          if(buf[0]!= 2)//SysParam.Address)
+  128   1          {
+  129   2              return;
+  130   2          }
+  131   1          switch(buf[1])
+  132   1          {
+  133   2              case CMD_READ_REG:
+  134   2              {
+  135   3                  memcpy(&ReadAckFrame, buf, len);
+  136   3                  ReadAck(); 
+  137   3                  break;     
+  138   3              }
+  139   2              case CMD_WRITE_REG:
+  140   2              {
+  141   3                  memcpy(&WriteAckFrame, buf, len);
+  142   3                  WriteAckDev(); 
+  143   3                  break;
+  144   3              }
+  145   2          }
+  146   1      
+  147   1      }
   148          
+  149          
 
 
 Module Information          Static   Overlayable
 ------------------------------------------------
-  code size            =       523     ------
+  code size            =       533     ------
   ecode size           =    ------     ------
   data size            =    ------     ------
   idata size           =    ------     ------
   pdata size           =    ------     ------
-  xdata size           =      1118     ------
+  xdata size           =      1120     ------
   xdata-const size     =    ------     ------
   edata size           =        36     ------
   bit size             =    ------     ------

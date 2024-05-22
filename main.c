@@ -384,9 +384,7 @@ void Task1s()
     }
     if((tm == 6)||(tm == 3))
     {
-        //RemCtlWrite();
-        //GetRetCode();
-        
+
     }
      
     if(tm == 6)
@@ -569,6 +567,7 @@ void ParamDef()
     }
 
     SysParam.Enable = 0x00;
+    SysParam.ChModeCtl = 0x00;
     SysParam.RemCtlFlag = true;
     RunStatus.SlaveRun = true;
     SysParam.Version = 100;
@@ -712,10 +711,18 @@ void GetChannel()
     {
         if(Valve[i])
         {
-            SysParam.Enable |= (1<<i);
+            if((SysParam.ChModeCtl &(1<<i)) == 0)
+            {
+                SysParam.Enable |= (1<<i);
+            }
+			else
+			{
+				SysParam.Enable &= ~(1<<i);
+			}
         }
         else
         {
+            SysParam.ChModeCtl &= ~(1<<i); 
             SysParam.Enable  &= ~(1<<i);
         }
     }
@@ -728,11 +735,11 @@ void GetChannel()
     {
         if(StopFlag)
         {
-                RunStatus.Running = false;
+            RunStatus.Running = false;
         }
         else
         {
-                RunStatus.Running = true;
+            RunStatus.Running = true;
         }
     }
 }
@@ -743,6 +750,7 @@ void SyncModBusDev()
     
     ModBusParam.Addr = RemRegAddr.SypAddr;
     ModBusParam.ChEnable = SysParam.Enable  ;
+    ModBusParam.ChModeCtl = SysParam.ChModeCtl;
     ModBusParam.RemCtlFlag = SysParam.RemCtlFlag;
 
     ModBusParam.RunStatus = RunStatus.Running;          
@@ -790,14 +798,14 @@ BYTE SendRemCtlCmd(BYTE Addr, BYTE Cmd, WORD Reg, WORD Count, BYTE * Data)
 //远程控制向从机写
 void RemCtlWrite()
 {
-    WORD RegCnt = 13;
+    WORD RegCnt = 14;
     SyncModBusDev();
     SendRemCtlCmd(2, CMD_WRITE_REG, MODBUS_PARAM_ADD, RegCnt, (BYTE *)&ModBusParam);
 }
 
 void RemCtlRead()
 {
-    WORD RegCnt = 13;
+    WORD RegCnt = 14;
     SendRemCtlCmd(2, CMD_READ_REG, MODBUS_PARAM_ADD, RegCnt,NULL);
 }
 
